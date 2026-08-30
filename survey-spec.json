@@ -1,0 +1,59 @@
+{
+  "survey_version": "3.0.0",
+  "title": "Preferences on AI-Assisted Government Decisions",
+  "scenario": "A government agency is considering using an AI system to assist with decisions about eligibility for a public education scholarship.",
+  "attributes": [
+    {
+      "id": "accuracy",
+      "levels": {
+        "0": "90%",
+        "1": "98%"
+      }
+    },
+    {
+      "id": "decision_process",
+      "levels": {
+        "0": "AI recommendation is applied automatically as the initial decision",
+        "1": "Human government officer reviews the AI recommendation before the initial decision"
+      }
+    },
+    {
+      "id": "review_after_decision",
+      "levels": {
+        "0": "Normal grievance process with no guaranteed dedicated human re-review",
+        "1": "Dedicated human review available on request"
+      }
+    },
+    {
+      "id": "audit",
+      "levels": {
+        "0": "Internal government audit",
+        "1": "Independent external audit with a public summary"
+      }
+    }
+  ],
+  "profile_encoding": "P[a][d][r][u], where each bit is 0 or 1 in the attribute order above",
+  "profiles": [
+    "P0000","P0001","P0010","P0011","P0100","P0101","P0110","P0111",
+    "P1000","P1001","P1010","P1011","P1100","P1101","P1110","P1111"
+  ],
+  "blocks": {
+    "B1": [["P0001","P0010"],["P0011","P0100"],["P0101","P1000"],["P0110","P1011"],["P0111","P1001"],["P1010","P1100"],["P1101","P1110"],["P0000","P1111"]],
+    "B2": [["P0001","P1000"],["P0010","P1001"],["P0011","P0110"],["P0100","P1010"],["P0101","P1110"],["P0111","P1101"],["P1011","P1100"],["P0000","P1111"]],
+    "B3": [["P0001","P0110"],["P0010","P1000"],["P0011","P1110"],["P0100","P1001"],["P0101","P1100"],["P0111","P1010"],["P1011","P1101"],["P0000","P1111"]],
+    "B4": [["P0001","P1010"],["P0010","P0100"],["P0011","P1101"],["P0101","P1001"],["P0110","P1000"],["P0111","P1100"],["P1011","P1110"],["P0000","P1111"]]
+  },
+  "randomization": {
+    "block_assignment": "uniform over B1-B4",
+    "substantive_task_order": "randomized",
+    "final_pair_position": 8,
+    "left_right_position": "randomized independently within each pair"
+  },
+  "submission": {
+    "method": "POST",
+    "content_type": "application/x-www-form-urlencoded;charset=UTF-8",
+    "form_field": "payload",
+    "payload_format": "JSON string",
+    "respondent_type_field": null
+  }
+}
