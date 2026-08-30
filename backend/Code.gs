@@ -1,14 +1,15 @@
 /**
  * Google Apps Script response collector for the Public Sector AI Survey.
- * Deploy this script as a Web App.
+ * Survey design v2.0.0
+ * Deploy as Web App.
  * Execute as: Me
  * Who has access: Anyone
  */
 
 const SPREADSHEET_ID = '1JbxZGxf-V2mQW5jsVa-X5EcU2dwR27CmBezgn9g7iOQ';
-const SHEET_NAME = 'responses';
-const SURVEY_VERSION = '1.0.0';
-const COLLECTOR_BUILD = '2026-08-30-fix1';
+const SHEET_NAME = 'responses_v2';
+const SURVEY_VERSION = '2.0.0';
+const COLLECTOR_BUILD = '2026-08-30-design-v2';
 
 function doGet() {
   try {
@@ -17,7 +18,9 @@ function doGet() {
       ok: true,
       service: 'public-sector-ai-survey-collector',
       build: COLLECTOR_BUILD,
-      spreadsheet: ss.getName()
+      survey_version: SURVEY_VERSION,
+      spreadsheet: ss.getName(),
+      response_sheet: SHEET_NAME
     });
   } catch (err) {
     console.error(err);
@@ -80,13 +83,20 @@ function validate_(p) {
   if (!p.response_id || String(p.response_id).length > 100) throw new Error('response_id');
   if (!p.demographics || !p.post || !Array.isArray(p.choices) || p.choices.length !== 8) throw new Error('shape');
 
-  const allowedPositions = ['A', 'B'];
-  p.choices.forEach((c, i) => {
-    if (!c || c.taskId !== `T${i + 1}`) throw new Error('task');
-    if (!allowedPositions.includes(c.selectedPosition)) throw new Error('choice');
+  const allowedTaskIds = new Set(['T1','T2','T3','T4','T5','T6','T7','T8']);
+  const allowedPositions = new Set(['A', 'B']);
+  const seen = new Set();
+
+  p.choices.forEach(c => {
+    if (!c || !allowedTaskIds.has(c.taskId)) throw new Error('task');
+    if (seen.has(c.taskId)) throw new Error('duplicate_task');
+    seen.add(c.taskId);
+    if (!allowedPositions.has(c.selectedPosition)) throw new Error('choice');
     if (!c.selectedProfileId || !c.displayedA || !c.displayedB) throw new Error('profiles');
+    if (!Number.isInteger(Number(c.presentationOrder)) || Number(c.presentationOrder) < 1 || Number(c.presentationOrder) > 8) throw new Error('order');
   });
 
+  if (seen.size !== 8) throw new Error('missing_task');
   if ((p.post.open_text || '').length > 1000) throw new Error('open_text');
 }
 
@@ -96,6 +106,7 @@ function flatten_(p) {
   const row = {
     response_id: p.response_id,
     survey_version: p.survey_version,
+    schema_version: p.schema_version || '',
     started_at: p.started_at,
     submitted_at: p.submitted_at,
     duration_seconds: p.duration_seconds,
@@ -109,17 +120,18 @@ function flatten_(p) {
 
   (p.choices || []).forEach((c, idx) => {
     const n = idx + 1;
-    row[`choice_${n}_task`] = c.taskId;
-    row[`choice_${n}_system_a_profile`] = c.displayedA;
-    row[`choice_${n}_system_b_profile`] = c.displayedB;
-    row[`choice_${n}_selected_position`] = c.selectedPosition;
-    row[`choice_${n}_selected_profile`] = c.selectedProfileId;
-    row[`choice_${n}_swapped`] = Boolean(c.swapped);
+    row[`presented_${n}_task`] = c.taskId;
+    row[`presented_${n}_system_a_profile`] = c.displayedA;
+    row[`presented_${n}_system_b_profile`] = c.displayedB;
+    row[`presented_${n}_selected_position`] = c.selectedPosition;
+    row[`presented_${n}_selected_profile`] = c.selectedProfileId;
+    row[`presented_${n}_swapped`] = Boolean(c.swapped);
+    row[`presented_${n}_order`] = c.presentationOrder;
   });
 
   row.stated_priority = post.priority || '';
   row.ai_acceptability = post.accept_ai || '';
-  row.human_final_decision_acceptability = post.accept_human || '';
+  row.human_initial_decision_acceptability = post.accept_human || '';
   row.comprehension_confidence = post.confidence || '';
   row.open_text = post.open_text || '';
   return row;
