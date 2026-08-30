@@ -9,86 +9,65 @@
   const PROFILE_TEXT = {
     auto: "The AI recommendation is applied automatically as the initial decision.",
     human: "A human government officer reviews the AI recommendation before the initial decision.",
-    normal_review: "Normal administrative grievance process. No guaranteed dedicated human re-review of the AI recommendation.",
-    dedicated_review: "Applicant can request a dedicated review by a human government officer.",
-    internal_audit: "Internal government audit.",
-    external_audit: "Independent external audit, with a summary of findings made public.",
-    international: "Approved providers may process relevant data in India or abroad.",
-    india_only: "Relevant personal data must be processed only on servers located in India."
+    normal_review: "The normal administrative grievance process applies, with no guaranteed dedicated human re-review of the AI recommendation.",
+    dedicated_review: "The applicant can request a dedicated review by a human government officer.",
+    internal_audit: "The responsible government body audits the system internally.",
+    external_audit: "An independent external auditor also audits the system, with a summary of findings made public."
   };
 
-  const tasks = [
-    {
-      id: "T1",
-      profiles: [
-        { id: "T1P1", accuracy: 90, decision: "human", review: "normal_review", audit: "external_audit", data: "international" },
-        { id: "T1P2", accuracy: 98, decision: "auto", review: "dedicated_review", audit: "internal_audit", data: "india_only" }
-      ]
-    },
-    {
-      id: "T2",
-      profiles: [
-        { id: "T2P1", accuracy: 94, decision: "auto", review: "dedicated_review", audit: "internal_audit", data: "international" },
-        { id: "T2P2", accuracy: 90, decision: "human", review: "normal_review", audit: "internal_audit", data: "india_only" }
-      ]
-    },
-    {
-      id: "T3",
-      profiles: [
-        { id: "T3P1", accuracy: 90, decision: "auto", review: "dedicated_review", audit: "internal_audit", data: "india_only" },
-        { id: "T3P2", accuracy: 98, decision: "human", review: "normal_review", audit: "external_audit", data: "india_only" }
-      ]
-    },
-    {
-      id: "T4",
-      profiles: [
-        { id: "T4P1", accuracy: 94, decision: "auto", review: "normal_review", audit: "external_audit", data: "india_only" },
-        { id: "T4P2", accuracy: 90, decision: "human", review: "dedicated_review", audit: "external_audit", data: "international" }
-      ]
-    },
-    {
-      id: "T5",
-      profiles: [
-        { id: "T5P1", accuracy: 94, decision: "human", review: "dedicated_review", audit: "external_audit", data: "india_only" },
-        { id: "T5P2", accuracy: 98, decision: "auto", review: "normal_review", audit: "internal_audit", data: "international" }
-      ]
-    },
-    {
-      id: "T6",
-      profiles: [
-        { id: "T6P1", accuracy: 94, decision: "human", review: "normal_review", audit: "internal_audit", data: "international" },
-        { id: "T6P2", accuracy: 94, decision: "auto", review: "dedicated_review", audit: "external_audit", data: "india_only" }
-      ]
-    },
-    {
-      id: "T7",
-      profiles: [
-        { id: "T7P1", accuracy: 98, decision: "auto", review: "dedicated_review", audit: "external_audit", data: "india_only" },
-        { id: "T7P2", accuracy: 98, decision: "human", review: "dedicated_review", audit: "internal_audit", data: "international" }
-      ]
-    },
-    {
-      id: "T8",
-      profiles: [
-        { id: "T8P1", accuracy: 98, decision: "human", review: "normal_review", audit: "internal_audit", data: "india_only" },
-        { id: "T8P2", accuracy: 90, decision: "auto", review: "normal_review", audit: "external_audit", data: "india_only" }
-      ]
-    }
+  // Four binary attributes produce 16 possible profiles. The eight choice sets below
+  // are a balanced non-dominated main-effects design. Each task differs on exactly
+  // three attributes and holds one constant. Each attribute is held constant in two
+  // tasks, and each level appears eight times across the 16 profile appearances.
+  const P = {
+    C02: { id: "C02", accuracy: 90, decision: "auto",  review: "normal_review",    audit: "external_audit" },
+    C03: { id: "C03", accuracy: 90, decision: "auto",  review: "dedicated_review", audit: "internal_audit" },
+    C05: { id: "C05", accuracy: 90, decision: "human", review: "normal_review",    audit: "internal_audit" },
+    C07: { id: "C07", accuracy: 90, decision: "human", review: "dedicated_review", audit: "internal_audit" },
+    C08: { id: "C08", accuracy: 90, decision: "human", review: "dedicated_review", audit: "external_audit" },
+    C10: { id: "C10", accuracy: 98, decision: "auto",  review: "normal_review",    audit: "external_audit" },
+    C11: { id: "C11", accuracy: 98, decision: "auto",  review: "dedicated_review", audit: "internal_audit" },
+    C12: { id: "C12", accuracy: 98, decision: "auto",  review: "dedicated_review", audit: "external_audit" },
+    C13: { id: "C13", accuracy: 98, decision: "human", review: "normal_review",    audit: "internal_audit" },
+    C14: { id: "C14", accuracy: 98, decision: "human", review: "normal_review",    audit: "external_audit" }
+  };
+
+  const TASKS = [
+    { id: "T1", profiles: [P.C02, P.C07] },
+    { id: "T2", profiles: [P.C02, P.C11] },
+    { id: "T3", profiles: [P.C03, P.C13] },
+    { id: "T4", profiles: [P.C05, P.C10] },
+    { id: "T5", profiles: [P.C07, P.C12] },
+    { id: "T6", profiles: [P.C08, P.C10] },
+    { id: "T7", profiles: [P.C08, P.C13] },
+    { id: "T8", profiles: [P.C11, P.C14] }
   ];
 
+  function shuffle(items) {
+    const out = [...items];
+    for (let i = out.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [out[i], out[j]] = [out[j], out[i]];
+    }
+    return out;
+  }
+
+  function randomizedTasks() {
+    return shuffle(TASKS).map(task => {
+      const swapped = Math.random() < 0.5;
+      return {
+        ...task,
+        displayed: swapped ? [task.profiles[1], task.profiles[0]] : [task.profiles[0], task.profiles[1]],
+        swapped
+      };
+    });
+  }
+
   const state = {
-    page: "intro",
     startedAt: null,
     responseId: crypto.randomUUID ? crypto.randomUUID() : `r-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     demographics: {},
-    randomizedTasks: tasks.map(t => {
-      const swapped = Math.random() < 0.5;
-      return {
-        ...t,
-        displayed: swapped ? [t.profiles[1], t.profiles[0]] : [t.profiles[0], t.profiles[1]],
-        swapped
-      };
-    }),
+    randomizedTasks: randomizedTasks(),
     choices: {},
     taskIndex: 0,
     post: {},
@@ -117,20 +96,42 @@
       .replaceAll("'", "&#039;");
   }
 
+  function selectField(id, label, options, selected, required = true, full = false) {
+    return `
+      <div class="field ${full ? "full" : ""}">
+        <label for="${id}" class="${required ? "required" : ""}">${escapeHtml(label)}</label>
+        <select id="${id}">
+          <option value="">Select an option</option>
+          ${options.map(o => `<option value="${escapeHtml(o)}" ${selected === o ? "selected" : ""}>${escapeHtml(o)}</option>`).join("")}
+        </select>
+      </div>`;
+  }
+
+  function scaleField(name, label, value, left, right) {
+    return `
+      <div class="field full">
+        <label class="required">${escapeHtml(label)}</label>
+        <div class="scale">
+          ${[1,2,3,4,5].map(n => `<label><input type="radio" name="${name}" value="${n}" ${String(value) === String(n) ? "checked" : ""}>${n}</label>`).join("")}
+        </div>
+        <div class="scale-anchors"><span>${escapeHtml(left)}</span><span>${escapeHtml(right)}</span></div>
+      </div>`;
+  }
+
   function renderIntro() {
     setProgress(0, "Introduction");
     app.innerHTML = `
       <div class="eyebrow">Research survey</div>
-      <h1>Preferences on AI-Assisted Government Services</h1>
-      <p class="lead">This short survey asks about preferences concerning the use of artificial intelligence in government services in India.</p>
-      <p>You will be shown pairs of hypothetical AI-assisted systems and asked which one you would prefer the government to use. The systems involve different trade-offs. There are no right or wrong answers.</p>
+      <h1>Public Preferences on AI-Assisted Government Decisions</h1>
+      <p class="lead">This short survey studies how people evaluate the use of artificial intelligence in government decision-making.</p>
+      <p>You will be shown pairs of hypothetical AI-assisted systems and asked which one you would prefer a government agency to use. The systems involve genuine trade-offs. There are no right or wrong answers.</p>
       <div class="info-box">
         <strong>Before you begin</strong>
         <ul class="clean-list">
           <li>The survey takes about 5 to 7 minutes.</li>
           <li>Participation is voluntary.</li>
           <li>No direct personal identifiers are requested.</li>
-          <li>Responses may be reported only in aggregate in a policy brief or related research.</li>
+          <li>Responses may be reported in aggregate in a policy brief or related research.</li>
           <li>Because responses are anonymous, individual responses cannot be withdrawn after submission.</li>
         </ul>
       </div>
@@ -141,32 +142,23 @@
           <label class="radio-option"><input type="radio" name="consent" value="no"> No</label>
         </div>
       </div>
-      <div class="field full" style="margin-top:18px">
-        <label class="required">Do you currently live in India?</label>
-        <div class="radio-stack">
-          <label class="radio-option"><input type="radio" name="india" value="yes"> Yes</label>
-          <label class="radio-option"><input type="radio" name="india" value="no"> No</label>
-        </div>
-      </div>
       <div id="introError" class="error" aria-live="polite"></div>
       <div class="actions right"><button id="beginBtn" class="btn btn-primary">Begin survey</button></div>
     `;
 
-    document.getElementById("beginBtn").addEventListener("click", () => {
+    document.getElementById("beginBtn").onclick = () => {
       const consent = document.querySelector('input[name="consent"]:checked')?.value;
-      const india = document.querySelector('input[name="india"]:checked')?.value;
-      const error = document.getElementById("introError");
-      if (!consent || !india) {
-        error.textContent = "Please answer both questions before continuing.";
+      if (!consent) {
+        document.getElementById("introError").textContent = "Please answer the consent question before continuing.";
         return;
       }
-      if (consent !== "yes" || india !== "yes") {
+      if (consent !== "yes") {
         renderTermination();
         return;
       }
-      state.startedAt = new Date().toISOString();
+      if (!state.startedAt) state.startedAt = new Date().toISOString();
       renderDemographics();
-    });
+    };
   }
 
   function renderTermination() {
@@ -174,9 +166,8 @@
     app.innerHTML = `
       <div class="termination">
         <h2>Thank you for your interest</h2>
-        <p class="muted">This survey is currently limited to consenting adults who live in India.</p>
-      </div>
-    `;
+        <p class="muted">This survey is limited to consenting adults aged 18 or above.</p>
+      </div>`;
     focusApp();
   }
 
@@ -186,7 +177,7 @@
     app.innerHTML = `
       <div class="eyebrow">Section 1</div>
       <h2>About you</h2>
-      <p class="muted">These broad categories help us understand whether preferences differ across groups.</p>
+      <p class="muted">These broad categories help describe the sample and explore whether preferences differ across groups.</p>
       <div class="form-grid">
         ${selectField("age", "Age group", ["18 to 24","25 to 34","35 to 44","45 to 54","55 to 64","65 or above","Prefer not to say"], d.age, true)}
         ${selectField("gender", "Gender", ["Woman","Man","Non-binary or another identity","Prefer not to say"], d.gender, false)}
@@ -199,14 +190,13 @@
       <div class="actions">
         <button id="backBtn" class="btn btn-secondary">Back</button>
         <button id="demoNext" class="btn btn-primary">Continue</button>
-      </div>
-    `;
+      </div>`;
+
     document.getElementById("backBtn").onclick = renderIntro;
     document.getElementById("demoNext").onclick = () => {
-      const required = ["age","education","field","genai","benefit"];
       const next = {};
       ["age","gender","education","field","genai","benefit"].forEach(k => next[k] = document.getElementById(k).value);
-      if (required.some(k => !next[k])) {
+      if (["age","education","field","genai","benefit"].some(k => !next[k])) {
         document.getElementById("demoError").textContent = "Please answer all required questions before continuing.";
         return;
       }
@@ -216,47 +206,34 @@
     focusApp();
   }
 
-  function selectField(id, label, options, selected, required = true, full = false) {
-    return `
-      <div class="field ${full ? "full" : ""}">
-        <label for="${id}" class="${required ? "required" : ""}">${escapeHtml(label)}</label>
-        <select id="${id}">
-          <option value="">Select an option</option>
-          ${options.map(o => `<option value="${escapeHtml(o)}" ${selected === o ? "selected" : ""}>${escapeHtml(o)}</option>`).join("")}
-        </select>
-      </div>`;
-  }
-
   function renderScenario() {
     setProgress(2, "Scenario and definitions");
     app.innerHTML = `
       <div class="eyebrow">Section 2</div>
-      <h2>Government scholarship scenario</h2>
-      <p class="lead">Imagine that the Government of India is considering using an AI system to assist with decisions about eligibility for a national education scholarship.</p>
+      <h2>Public benefit eligibility scenario</h2>
+      <p class="lead">Imagine that a government agency is considering using an AI system to assist with decisions about whether applicants qualify for a public benefit.</p>
       <div class="info-box">
         <p><strong>All systems you will see:</strong></p>
         <ul class="clean-list">
-          <li>use the same scholarship eligibility rules;</li>
+          <li>apply the same eligibility rules;</li>
           <li>use the same categories of applicant information;</li>
           <li>are required to comply with applicable law;</li>
-          <li>have the same cost and processing time unless stated otherwise.</li>
+          <li>have the same cost and processing time.</li>
         </ul>
-        <p>They differ only in the features shown to you.</p>
+        <p>They differ only in the four features shown below.</p>
       </div>
-      <h3>What the five features mean</h3>
+      <h3>What the four features mean</h3>
       <div class="feature-definitions">
-        <div class="definition"><strong>Accuracy</strong>The percentage of cases in which the AI recommendation matches the correct eligibility outcome after a full expert review.</div>
-        <div class="definition"><strong>Decision process</strong>Either the AI recommendation becomes the initial decision automatically, or a human officer reviews it before the initial decision.</div>
-        <div class="definition"><strong>Review after a decision</strong>Either the normal grievance process applies, or an applicant is guaranteed a dedicated human review on request.</div>
-        <div class="definition"><strong>Audit</strong>Either the system is audited internally, or it is also independently audited and a summary is made public.</div>
-        <div class="definition"><strong>Data processing location</strong>Either approved providers may process relevant data in India or abroad, or relevant personal data must be processed only in India.</div>
+        <div class="definition"><strong>Accuracy</strong>The percentage of cases in which the AI recommendation reaches the same eligibility outcome as a full review by qualified human officials applying the program rules.</div>
+        <div class="definition"><strong>Decision process</strong>Either the AI recommendation becomes the initial decision automatically, or a human government officer reviews it before the initial decision is made.</div>
+        <div class="definition"><strong>Review after a decision</strong>Either the normal grievance process applies, or an applicant can request a dedicated human review of the decision.</div>
+        <div class="definition"><strong>Audit</strong>Either the responsible government body audits the system internally, or an independent external auditor also audits it and a summary is made public.</div>
       </div>
-      <p class="small muted">Assume that both data-processing arrangements are subject to the same applicable privacy and security requirements.</p>
       <div class="actions">
         <button id="scenarioBack" class="btn btn-secondary">Back</button>
         <button id="startChoices" class="btn btn-primary">Start choices</button>
-      </div>
-    `;
+      </div>`;
+
     document.getElementById("scenarioBack").onclick = renderDemographics;
     document.getElementById("startChoices").onclick = () => {
       state.taskIndex = 0;
@@ -265,15 +242,36 @@
     focusApp();
   }
 
+  function attribute(name, value) {
+    return `<div class="attribute-row"><div class="attribute-name">${escapeHtml(name)}</div><div class="attribute-value">${escapeHtml(value)}</div></div>`;
+  }
+
+  function profileCard(p, label, selected) {
+    return `
+      <div class="choice-card ${selected ? "selected" : ""}">
+        <label>
+          <input type="radio" name="choice" value="${label}" ${selected ? "checked" : ""}>
+          <div class="choice-title"><span>System ${label}</span><span class="choose-pill">Select</span></div>
+          <div class="attribute-table">
+            ${attribute("Accuracy", `${p.accuracy}%`)}
+            ${attribute("Decision process", PROFILE_TEXT[p.decision])}
+            ${attribute("Review after decision", PROFILE_TEXT[p.review])}
+            ${attribute("Audit", PROFILE_TEXT[p.audit])}
+          </div>
+        </label>
+      </div>`;
+  }
+
   function renderTask() {
     const i = state.taskIndex;
     const task = state.randomizedTasks[i];
     setProgress(3 + i, `Choice ${i + 1} of ${state.randomizedTasks.length}`);
     const existing = state.choices[task.id];
+
     app.innerHTML = `
       <div class="eyebrow">Section 3 · Choice ${i + 1} of ${state.randomizedTasks.length}</div>
       <h2>Which system would you prefer the government to use?</h2>
-      <p class="muted">Choose one system. There is no neutral option because we are interested in how people make trade-offs when they must choose.</p>
+      <p class="muted">Choose one. Each pair contains a trade-off, so neither option is intended to be obviously correct.</p>
       <div class="choice-grid">
         ${profileCard(task.displayed[0], "A", existing?.selectedPosition === "A")}
         ${profileCard(task.displayed[1], "B", existing?.selectedPosition === "B")}
@@ -282,20 +280,20 @@
       <div class="actions">
         <button id="taskBack" class="btn btn-secondary">Back</button>
         <button id="taskNext" class="btn btn-primary">${i === state.randomizedTasks.length - 1 ? "Continue" : "Next choice"}</button>
-      </div>
-    `;
+      </div>`;
 
     document.querySelectorAll('input[name="choice"]').forEach(input => {
-      input.addEventListener("change", () => {
+      input.onchange = () => {
         document.querySelectorAll(".choice-card").forEach(c => c.classList.remove("selected"));
         input.closest(".choice-card").classList.add("selected");
-      });
+      };
     });
 
     document.getElementById("taskBack").onclick = () => {
       if (i === 0) renderScenario();
       else { state.taskIndex -= 1; renderTask(); }
     };
+
     document.getElementById("taskNext").onclick = () => {
       const selected = document.querySelector('input[name="choice"]:checked');
       if (!selected) {
@@ -310,7 +308,8 @@
         displayedB: task.displayed[1].id,
         selectedPosition: pos,
         selectedProfileId: task.displayed[idx].id,
-        swapped: task.swapped
+        swapped: task.swapped,
+        presentationOrder: i + 1
       };
       if (i < state.randomizedTasks.length - 1) {
         state.taskIndex += 1;
@@ -322,27 +321,6 @@
     focusApp();
   }
 
-  function profileCard(p, label, selected) {
-    return `
-      <div class="choice-card ${selected ? "selected" : ""}">
-        <label>
-          <input type="radio" name="choice" value="${label}" ${selected ? "checked" : ""}>
-          <div class="choice-title"><span>System ${label}</span><span class="choose-pill">Select</span></div>
-          <div class="attribute-table">
-            ${attribute("Accuracy", `${p.accuracy}%`)}
-            ${attribute("Decision process", PROFILE_TEXT[p.decision])}
-            ${attribute("Review", PROFILE_TEXT[p.review])}
-            ${attribute("Audit", PROFILE_TEXT[p.audit])}
-            ${attribute("Data processing", PROFILE_TEXT[p.data])}
-          </div>
-        </label>
-      </div>`;
-  }
-
-  function attribute(name, value) {
-    return `<div class="attribute-row"><div class="attribute-name">${escapeHtml(name)}</div><div class="attribute-value">${escapeHtml(value)}</div></div>`;
-  }
-
   function renderPost() {
     setProgress(11, "Overall view");
     const p = state.post;
@@ -350,12 +328,12 @@
       <div class="eyebrow">Section 4</div>
       <h2>Your overall view</h2>
       <div class="form-grid">
-        ${selectField("priority", "Looking back at your choices, which one factor do you think mattered most to you?", ["Accuracy of the AI system","Human review before the initial decision","Ability to request a human review after a decision","Independent external auditing","Keeping personal data processing within India","I did not have one main factor"], p.priority, true, true)}
-        ${scaleField("accept_ai", "Overall, how acceptable is it for the government to use AI to assist with scholarship eligibility decisions?", p.accept_ai, "Completely unacceptable", "Completely acceptable")}
-        ${scaleField("accept_human", "Suppose an AI system only makes a recommendation and a human government officer remains responsible for the actual decision. How acceptable would that use of AI be?", p.accept_human, "Completely unacceptable", "Completely acceptable")}
+        ${selectField("priority", "Looking back at your choices, which one factor do you think mattered most to you?", ["Accuracy of the AI system","Human review before the initial decision","Ability to request a human review after a decision","Independent external auditing","I did not have one main factor"], p.priority, true, true)}
+        ${scaleField("accept_ai", "Overall, how acceptable is it for a government to use AI to assist with public-benefit eligibility decisions?", p.accept_ai, "Completely unacceptable", "Completely acceptable")}
+        ${scaleField("accept_human", "Suppose AI only makes a recommendation and a human government officer remains responsible for the initial decision. How acceptable would that use of AI be?", p.accept_human, "Completely unacceptable", "Completely acceptable")}
         ${scaleField("confidence", "How confident are you that you understood the differences between the systems shown in this survey?", p.confidence, "Not at all confident", "Very confident")}
         <div class="field full">
-          <label for="open_text">Is there any other condition or requirement that you think should apply when government uses AI for decisions affecting individuals? <span class="muted small">Optional</span></label>
+          <label for="open_text">Is there any other condition or requirement that you think should apply when governments use AI for decisions affecting individuals? <span class="muted small">Optional</span></label>
           <textarea id="open_text" maxlength="1000" placeholder="Optional response">${escapeHtml(p.open_text || "")}</textarea>
         </div>
       </div>
@@ -363,9 +341,9 @@
       <div class="actions">
         <button id="postBack" class="btn btn-secondary">Back</button>
         <button id="reviewBtn" class="btn btn-primary">Review and submit</button>
-      </div>
-    `;
-    document.getElementById("postBack").onclick = () => { state.taskIndex = 7; renderTask(); };
+      </div>`;
+
+    document.getElementById("postBack").onclick = () => { state.taskIndex = state.randomizedTasks.length - 1; renderTask(); };
     document.getElementById("reviewBtn").onclick = () => {
       const next = {
         priority: document.getElementById("priority").value,
@@ -384,20 +362,8 @@
     focusApp();
   }
 
-  function scaleField(name, label, value, left, right) {
-    return `
-      <div class="field full">
-        <label class="required">${escapeHtml(label)}</label>
-        <div class="scale">
-          ${[1,2,3,4,5].map(n => `<label><input type="radio" name="${name}" value="${n}" ${String(value) === String(n) ? "checked" : ""}>${n}</label>`).join("")}
-        </div>
-        <div class="scale-anchors"><span>${escapeHtml(left)}</span><span>${escapeHtml(right)}</span></div>
-      </div>`;
-  }
-
   function renderReview() {
     setProgress(11.5, "Review and submit");
-    const d = state.demographics;
     app.innerHTML = `
       <div class="eyebrow">Final step</div>
       <h2>Ready to submit</h2>
@@ -405,19 +371,17 @@
       <div class="info-box">
         <p><strong>Your response includes:</strong></p>
         <ul class="clean-list">
-          <li>Broad background categories such as age group and education.</li>
-          <li>Your eight system choices.</li>
-          <li>Your overall views and any optional written comment.</li>
+          <li>broad background categories;</li>
+          <li>your eight system choices;</li>
+          <li>your overall views and any optional written comment.</li>
         </ul>
         <p><strong>It does not ask for:</strong> your name, email address, phone number, IP address, or precise location.</p>
       </div>
-      <p class="small muted">Age group selected: ${escapeHtml(d.age)} · Education: ${escapeHtml(d.education)}</p>
       <div id="submitStatus" aria-live="polite"></div>
       <div class="actions">
         <button id="reviewBack" class="btn btn-secondary">Back</button>
         <button id="submitBtn" class="btn btn-primary">Submit response</button>
-      </div>
-    `;
+      </div>`;
     document.getElementById("reviewBack").onclick = renderPost;
     document.getElementById("submitBtn").onclick = submitSurvey;
     focusApp();
@@ -427,8 +391,8 @@
     const submittedAt = new Date();
     const startedAt = state.startedAt ? new Date(state.startedAt) : submittedAt;
     return {
-      schema_version: "1",
-      survey_version: config.surveyVersion || "1.0.0",
+      schema_version: "2",
+      survey_version: config.surveyVersion || "2.0.0",
       response_id: state.responseId,
       started_at: state.startedAt,
       submitted_at: submittedAt.toISOString(),
@@ -486,9 +450,8 @@
         <div class="check">✓</div>
         <h2>${pilotMode ? "Pilot response saved on this device" : "Thank you"}</h2>
         <p class="muted">${pilotMode ? "The live response collector has not yet been configured. This response has not been transmitted." : "Your anonymous response has been submitted."}</p>
-        ${pilotMode ? `<p class="small">Response ID: ${escapeHtml(state.responseId)}</p>` : ""}
-      </div>
-    `;
+        <p class="small">Response ID: ${escapeHtml(state.responseId)}</p>
+      </div>`;
     focusApp();
   }
 
