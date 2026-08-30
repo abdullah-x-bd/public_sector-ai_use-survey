@@ -77,6 +77,7 @@ function validate_(p) {
   if (!p || typeof p !== 'object') throw new Error('payload');
   if (p.survey_version !== SURVEY_VERSION) throw new Error('version');
   if (!p.response_id || String(p.response_id).length > 100) throw new Error('response_id');
+  if (!['B1','B2','B3','B4'].includes(p.design_block)) throw new Error('design_block');
   if (!p.demographics || !p.post || !Array.isArray(p.choices) || p.choices.length !== 8) throw new Error('shape');
 
   const allowedTaskIds = new Set(['T1','T2','T3','T4','T5','T6','T7','T8']);
@@ -112,6 +113,7 @@ function flatten_(p) {
     response_id: p.response_id,
     survey_version: p.survey_version,
     schema_version: p.schema_version || '',
+    design_block: p.design_block || '',
     started_at: p.started_at,
     submitted_at: p.submitted_at,
     duration_seconds: p.duration_seconds,
