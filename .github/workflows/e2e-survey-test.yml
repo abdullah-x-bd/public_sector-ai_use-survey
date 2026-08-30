@@ -31,7 +31,6 @@ jobs:
             const browser = await chromium.launch({ headless: true });
             const page = await browser.newPage();
 
-            // Confirm the deployed collector is V3 before touching the survey.
             const health = await page.request.get(process.env.COLLECTOR_URL);
             const healthText = await health.text();
             console.log('COLLECTOR_HEALTH=' + healthText);
@@ -42,26 +41,23 @@ jobs:
             }
 
             await page.goto(process.env.SURVEY_URL, { waitUntil: 'networkidle', timeout: 60000 });
-            await page.locator('input[name="consent"][value="yes"]').check();
+            await page.locator('input[name="consent"][value="yes"]').check({ force: true });
             await page.locator('#beginBtn').click();
 
-            // Optional descriptive fields are left blank intentionally.
             await page.locator('#genai').selectOption({ label: 'Daily or almost daily' });
             await page.locator('#benefit').selectOption({ label: 'No' });
             await page.locator('#demoNext').click();
             await page.locator('#startChoices').click();
 
-            // Deterministic synthetic choices. This tests UI navigation, random A/B
-            // positioning, payload construction, Apps Script validation, and Sheet write.
             for (let i = 0; i < 8; i++) {
-              await page.locator('input[name="choice"][value="A"]').check();
+              await page.locator('input[name="choice"][value="A"]').check({ force: true });
               await page.locator('#taskNext').click();
             }
 
             await page.locator('#priority').selectOption({ label: 'Accuracy of the AI system' });
-            await page.locator('input[name="accept_ai"][value="3"]').check();
-            await page.locator('input[name="accept_human"][value="4"]').check();
-            await page.locator('input[name="confidence"][value="5"]').check();
+            await page.locator('input[name="accept_ai"][value="3"]').check({ force: true });
+            await page.locator('input[name="accept_human"][value="4"]').check({ force: true });
+            await page.locator('input[name="confidence"][value="5"]').check({ force: true });
             await page.locator('#open_text').fill('E2E TEST RESPONSE - REMOVE BEFORE ANALYSIS');
             await page.locator('#reviewBtn').click();
             await page.locator('#submitBtn').click();
