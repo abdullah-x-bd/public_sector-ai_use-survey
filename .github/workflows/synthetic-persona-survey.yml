@@ -11,7 +11,7 @@ permissions:
 jobs:
   run-personas:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
       SURVEY_URL: https://abdullah-x-bd.github.io/public_sector-ai_use-survey/
       COLLECTOR_URL: https://script.google.com/macros/s/AKfycbxgcXe47MryQeBD0vZujshKARzOarTdhUtneiOdnWQ9OrGcjKVYlSEpY43fJinFEOfmvg/exec
@@ -63,10 +63,14 @@ jobs:
           }
 
           function educationGroup(value='') {
-            const s = String(value).toLowerCase();
+            const s = String(value).trim().toLowerCase();
             if (s.includes('ph.d') || s.includes('phd') || s.includes('doctor')) return 'Doctoral';
-            if (/\b(m\.a\.|m\.sc\.|m\.s\.|m\.tech|mba|ll\.m|m\.p\.a|m\.phil|m\.des|mph)\b/i.test(value) || s.includes('master') || s.includes('m.b.b.s. + mph')) return 'Postgraduate';
-            if (/\b(b\.a\.|b\.sc\.|b\.tech|b\.e\.)\b/i.test(value) || s.includes('bachelor')) return 'Undergraduate';
+            if (
+              s.startsWith('m.') || s === 'mba' || s.startsWith('ll.m') ||
+              s === 'mph' || s.includes('+ mph') || s.includes('pg diploma') ||
+              s.includes('master')
+            ) return 'Postgraduate';
+            if (s.startsWith('b.') || s.includes('bachelor')) return 'Undergraduate';
             return 'Other';
           }
 
@@ -100,8 +104,8 @@ jobs:
             const j = await r.json();
             const ids = new Set((j.data || []).map(x => x.id));
             const candidates = [
-              'openai/gpt-4.1-mini',
               'openai/gpt-5-mini',
+              'openai/gpt-4.1-mini',
               'openai/gpt-4o-mini'
             ];
             const found = candidates.find(x => ids.has(x));
@@ -115,6 +119,7 @@ jobs:
           Answer as that persona would plausibly answer, not as an AI assistant and not according to your own policy preferences.
           Preserve the persona's professional background, technical/policy depth, motivations, constraints, and likely attitudes.
           Make real trade-offs. Do not mechanically choose the option with more oversight or more accuracy.
+          Treat each paired choice independently on its merits while remaining internally consistent with the persona.
           The eight paired choices are shown in the exact order encountered by this respondent.
           Return ONLY a JSON object matching the requested schema.`;
 
@@ -129,7 +134,7 @@ jobs:
           EIGHT PRESENTED CHOICES:
           ${pairs.map((p,i) => `Choice ${i+1}\nSystem A:\n${p.A}\n\nSystem B:\n${p.B}`).join('\n\n---\n\n')}
 
-          Choose responses as this persona. For public-benefit experience, if the persona data do not support a plausible inference, choose "Not sure".
+          Choose responses as this persona. For generative-AI use and public-benefit experience, infer only when the persona details make that plausible. If public-benefit experience is not supported, choose "Not sure".
 
           Return exactly:
           {
@@ -160,7 +165,6 @@ jobs:
                       { role: 'system', content: system },
                       { role: 'user', content: user }
                     ],
-                    temperature: 0.35,
                     max_tokens: 900,
                     response_format: { type: 'json_object' }
                   })
@@ -251,6 +255,7 @@ jobs:
             return {
               persona_id: persona.persona_id,
               persona_name: persona.name,
+              persona,
               response_id: responseId,
               model,
               generated: answer,
@@ -271,7 +276,9 @@ jobs:
             }
 
             const csv = zlib.gunzipSync(Buffer.from(PERSONAS_GZIP_B64, 'base64')).toString('utf8');
-            const personas = parse(csv, { columns: true, skip_empty_lines: true });
+            const personas = parse(csv, { columns: true, skip_empty_lines: true, bom: true });
+            if (personas.length !== 60) throw new Error(`Expected 60 personas, found ${personas.length}`);
+            if (!personas.every(p => /^P\d{3}$/.test(p.persona_id || ''))) throw new Error('Persona IDs did not parse correctly');
             const limit = Math.min(Number(process.env.RUN_LIMIT || personas.length), personas.length);
             const model = await chooseModel();
             console.log(`MODEL=${model} PERSONAS=${personas.length} RUN_LIMIT=${limit}`);
@@ -293,6 +300,7 @@ jobs:
                   status: 'failure',
                   persona_id: persona.persona_id,
                   persona_name: persona.name,
+                  persona,
                   error: String(e && e.stack || e),
                   completed_at: new Date().toISOString()
                 });
