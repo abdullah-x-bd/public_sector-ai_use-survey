@@ -16,7 +16,7 @@ jobs:
       SURVEY_URL: https://abdullah-x-bd.github.io/public_sector-ai_use-survey/
       COLLECTOR_URL: https://script.google.com/macros/s/AKfycbxgcXe47MryQeBD0vZujshKARzOarTdhUtneiOdnWQ9OrGcjKVYlSEpY43fJinFEOfmvg/exec
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-      RUN_LIMIT: "60"
+      RUN_LIMIT: "58"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,13 +27,17 @@ jobs:
           npm init -y
           npm install playwright@1.55.0 csv-parse@5.5.6
           npx playwright install chromium
-      - name: Run 60 synthetic personas sequentially
+      - name: Load P061-P118 persona batch
+        run: |
+          rm -f synthetic_tmp/personas.*.b64
+          cp synthetic_tmp/batch2_p061_p118.b64 synthetic_tmp/personas.00.b64
+      - name: Run 58 synthetic personas sequentially
         run: node synthetic_tmp/run-personas.js
       - name: Upload synthetic-run audit manifest
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: synthetic-persona-run
+          name: synthetic-persona-run-p061-p118
           path: |
             synthetic-run-manifest.jsonl
             synthetic-run-summary.json
