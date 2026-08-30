@@ -1,15 +1,15 @@
 /**
  * Google Apps Script response collector for the Public Sector AI Survey.
- * Survey design v2.0.0
+ * Survey design v3.0.0
  * Deploy as Web App.
  * Execute as: Me
  * Who has access: Anyone
  */
 
 const SPREADSHEET_ID = '1JbxZGxf-V2mQW5jsVa-X5EcU2dwR27CmBezgn9g7iOQ';
-const SHEET_NAME = 'responses_v2';
-const SURVEY_VERSION = '2.0.0';
-const COLLECTOR_BUILD = '2026-08-30-design-v2';
+const SHEET_NAME = 'responses_v3';
+const SURVEY_VERSION = '3.0.0';
+const COLLECTOR_BUILD = '2026-08-30-design-v3';
 
 function doGet() {
   try {
@@ -36,10 +36,6 @@ function doPost(e) {
 
     const payload = JSON.parse(e.parameter.payload);
     validate_(payload);
-
-    if (payload.honeypot) {
-      return json_({ ok: true, build: COLLECTOR_BUILD });
-    }
 
     const sheet = getSheet_();
     const row = flatten_(payload);
@@ -85,18 +81,27 @@ function validate_(p) {
 
   const allowedTaskIds = new Set(['T1','T2','T3','T4','T5','T6','T7','T8']);
   const allowedPositions = new Set(['A', 'B']);
-  const seen = new Set();
+  const allowedProfiles = new Set([
+    'P0000','P0001','P0010','P0011','P0100','P0101','P0110','P0111',
+    'P1000','P1001','P1010','P1011','P1100','P1101','P1110','P1111'
+  ]);
+  const seenTasks = new Set();
+  const seenProfiles = new Set();
 
   p.choices.forEach(c => {
     if (!c || !allowedTaskIds.has(c.taskId)) throw new Error('task');
-    if (seen.has(c.taskId)) throw new Error('duplicate_task');
-    seen.add(c.taskId);
+    if (seenTasks.has(c.taskId)) throw new Error('duplicate_task');
+    seenTasks.add(c.taskId);
     if (!allowedPositions.has(c.selectedPosition)) throw new Error('choice');
-    if (!c.selectedProfileId || !c.displayedA || !c.displayedB) throw new Error('profiles');
+    if (!allowedProfiles.has(c.selectedProfileId) || !allowedProfiles.has(c.displayedA) || !allowedProfiles.has(c.displayedB)) throw new Error('profiles');
+    if (c.displayedA === c.displayedB) throw new Error('same_profile');
+    seenProfiles.add(c.displayedA);
+    seenProfiles.add(c.displayedB);
     if (!Number.isInteger(Number(c.presentationOrder)) || Number(c.presentationOrder) < 1 || Number(c.presentationOrder) > 8) throw new Error('order');
   });
 
-  if (seen.size !== 8) throw new Error('missing_task');
+  if (seenTasks.size !== 8) throw new Error('missing_task');
+  if (seenProfiles.size !== 16) throw new Error('profile_coverage');
   if ((p.post.open_text || '').length > 1000) throw new Error('open_text');
 }
 
@@ -110,10 +115,10 @@ function flatten_(p) {
     started_at: p.started_at,
     submitted_at: p.submitted_at,
     duration_seconds: p.duration_seconds,
+    country_or_territory: d.country || '',
     age_group: d.age || '',
     gender: d.gender || '',
     education: d.education || '',
-    field: d.field || '',
     genai_frequency: d.genai || '',
     public_benefit_experience: d.benefit || ''
   };
@@ -127,6 +132,7 @@ function flatten_(p) {
     row[`presented_${n}_selected_profile`] = c.selectedProfileId;
     row[`presented_${n}_swapped`] = Boolean(c.swapped);
     row[`presented_${n}_order`] = c.presentationOrder;
+    row[`presented_${n}_dominated_check`] = Boolean(c.dominatedCheck);
   });
 
   row.stated_priority = post.priority || '';
