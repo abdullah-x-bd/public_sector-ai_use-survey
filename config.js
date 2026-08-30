@@ -1,7 +1,5 @@
-// Paste the deployed Google Apps Script Web App URL here before collecting responses.
-// Example: https://script.google.com/macros/s/AKfycb.../exec
 window.SURVEY_CONFIG = {
-  submissionEndpoint: "",
+  submissionEndpoint: "https://script.google.com/macros/s/AKfycbxgcXe47MryQeBD0vZujshKARzOarTdhUtneiOdnWQ9OrGcjKVYlSEpY43fJinFEOfmvg/exec",
   surveyVersion: "1.0.0",
-  allowLocalPilotWhenEndpointMissing: true
+  allowLocalPilotWhenEndpointMissing: false
 };
