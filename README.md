@@ -1,34 +1,41 @@
 # Public Sector AI Use Survey
 
-An anonymous paired-choice survey on public preferences for AI-assisted government decision-making.
+An anonymous paired-choice survey on preferences for AI-assisted government decision-making.
 
 ## Current design
 
-Survey version `2.0.0` studies four attributes:
+Survey version `3.0.0` studies four attributes:
 
 - accuracy: 90% vs 98%
 - decision process: automatic initial decision vs human review before the initial decision
 - post-decision review: normal grievance process vs dedicated human review on request
 - audit: internal audit vs independent external audit with a public summary
 
-Four binary attributes imply 16 possible profiles. The live survey uses eight balanced, non-dominated paired choices rather than all 120 possible profile pairings. Each pair differs on exactly three attributes and holds one constant. Across the eight tasks, every attribute is held constant exactly twice and both levels of every attribute appear equally often.
+These four binary attributes produce all `2^4 = 16` possible system profiles.
 
-Task order and A/B position are randomized separately for each respondent.
+Each completed survey shows all 16 profiles exactly once across eight paired choices:
 
-See `RESEARCH_DESIGN_V2.md` for the full rationale and analysis plan and `design.csv` for the exact choice sets.
+- seven substantive non-dominated trade-off pairs
+- one final all-low versus all-high dominated pair, retained as a comprehension/choice-consistency check rather than part of the primary preference model
+
+The site randomly assigns one of four balanced pairing blocks. Across the four blocks, each attribute is balanced in how often it differs within a pair. The order of the seven substantive tasks is randomized, the dominated pair remains last, and System A/System B position is randomized independently for every pair.
+
+See `RESEARCH_DESIGN_V3.md` for the rationale and analysis plan and `design.csv` for every profile and pairing in every block.
 
 ## Scope
 
-The study is not restricted to India. Any consenting adult aged 18 or above may participate. The scenario concerns a generic government agency considering AI to assist with public-benefit eligibility decisions.
+The study is not restricted to India. The scenario concerns a generic government agency considering AI to assist with public education scholarship eligibility decisions.
+
+The site does not ask or attempt to determine whether a submission was produced by a human or an automated system. It contains no CAPTCHA, sign-in requirement, fingerprinting, rate limit, honeypot, or respondent-type field.
 
 ## Files
 
 - `index.html` site shell
 - `styles.css` responsive interface
-- `app.js` survey logic and experimental randomization
+- `app.js` survey logic, factorial profiles, block assignment, and randomization
 - `config.js` collector endpoint and survey version
-- `design.csv` exact experimental choice sets
-- `RESEARCH_DESIGN_V2.md` research design and analysis plan
+- `design.csv` exact experimental design for all four blocks
+- `RESEARCH_DESIGN_V3.md` research design and analysis plan
 - `backend/Code.gs` Google Apps Script response collector
 
 ## GitHub Pages
@@ -48,12 +55,14 @@ The Apps Script must use the current `backend/Code.gs` and be deployed as:
 - Execute as: Me
 - Who has access: Anyone
 
-Version 2 responses are written to a separate Google Sheet tab named `responses_v2` so the earlier pilot design cannot be mixed with the final design.
+Version 3 responses are written to a separate Google Sheet tab named `responses_v3`, preventing pilot and earlier-design responses from mixing with the final dataset.
 
-When `backend/Code.gs` changes, update the Apps Script project and deploy a **new version** of the existing Web App before collecting responses.
+Whenever `backend/Code.gs` changes, update the Apps Script project and deploy a **new version** of the existing Web App before collecting responses.
 
 ## Analysis
 
-Each respondent makes eight choices. These repeated choices are not independent respondents. Reshape to one row per displayed profile per respondent-task and estimate the effect of the four attributes using a conditional logit or an equivalent main-effects model with respondent-clustered uncertainty.
+The primary analysis uses only the first seven substantive choices. Reshape responses to the alternative level and estimate the contribution of accuracy, human review before the initial decision, dedicated human review after a decision, and independent external audit using a conditional logit or equivalent discrete-choice model. Account for repeated choices from the same respondent.
 
-Treat results as exploratory unless recruitment supports population-level inference.
+The eighth choice is not included in the primary coefficient estimates. Report it separately as a descriptive consistency measure.
+
+Because the site intentionally does not distinguish human from automated submissions, a dataset collected without controlled recruitment cannot be described as a representative estimate of human public opinion. Any inference must match the actual recruitment process used.
