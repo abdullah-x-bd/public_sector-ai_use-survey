@@ -15,8 +15,6 @@
     external_audit: "An independent external auditor also audits the system, with a summary of findings made public."
   };
 
-  // Complete 2 x 2 x 2 x 2 factorial: 16 possible systems.
-  // Bits represent accuracy, decision process, review after decision, audit.
   function makeProfile(bits) {
     const [accuracy, decision, review, audit] = bits.split("").map(Number);
     return {
@@ -35,18 +33,27 @@
     PROFILES[bits] = makeProfile(bits);
   }
 
-  // Complementary pairing uses all 16 profiles exactly once.
-  // T1-T7 are non-dominated trade-offs. T8 is the all-low versus all-high pair.
-  const TASKS = [
-    { id: "T1", profiles: [PROFILES["0001"], PROFILES["1110"]], dominatedCheck: false },
-    { id: "T2", profiles: [PROFILES["0010"], PROFILES["1101"]], dominatedCheck: false },
-    { id: "T3", profiles: [PROFILES["0011"], PROFILES["1100"]], dominatedCheck: false },
-    { id: "T4", profiles: [PROFILES["0100"], PROFILES["1011"]], dominatedCheck: false },
-    { id: "T5", profiles: [PROFILES["0101"], PROFILES["1010"]], dominatedCheck: false },
-    { id: "T6", profiles: [PROFILES["0110"], PROFILES["1001"]], dominatedCheck: false },
-    { id: "T7", profiles: [PROFILES["0111"], PROFILES["1000"]], dominatedCheck: false },
-    { id: "T8", profiles: [PROFILES["0000"], PROFILES["1111"]], dominatedCheck: true }
-  ];
+  // Four balanced blocks. Every block uses every one of the 16 factorial profiles
+  // exactly once. The first seven pairs are non-dominated trade-offs with Hamming
+  // distance 2 or 3. The final pair is the all-low versus all-high dominated pair.
+  const BLOCK_PAIRS = {
+    B1: [
+      ["0001","0010"], ["0011","0100"], ["0101","1000"], ["0110","1011"],
+      ["0111","1001"], ["1010","1100"], ["1101","1110"]
+    ],
+    B2: [
+      ["0001","1000"], ["0010","1001"], ["0011","0110"], ["0100","1010"],
+      ["0101","1110"], ["0111","1101"], ["1011","1100"]
+    ],
+    B3: [
+      ["0001","0110"], ["0010","1000"], ["0011","1110"], ["0100","1001"],
+      ["0101","1100"], ["0111","1010"], ["1011","1101"]
+    ],
+    B4: [
+      ["0001","1010"], ["0010","0100"], ["0011","1101"], ["0101","1001"],
+      ["0110","1000"], ["0111","1100"], ["1011","1110"]
+    ]
+  };
 
   function shuffle(items) {
     const out = [...items];
@@ -57,10 +64,24 @@
     return out;
   }
 
-  function randomizedTasks() {
-    const substantive = shuffle(TASKS.filter(t => !t.dominatedCheck));
-    const finalCheck = TASKS.find(t => t.dominatedCheck);
-    return [...substantive, finalCheck].map((task, index) => {
+  function chooseBlock() {
+    const ids = Object.keys(BLOCK_PAIRS);
+    return ids[Math.floor(Math.random() * ids.length)];
+  }
+
+  function buildTasks(blockId) {
+    const substantive = BLOCK_PAIRS[blockId].map((pair, index) => ({
+      id: `T${index + 1}`,
+      profiles: [PROFILES[pair[0]], PROFILES[pair[1]]],
+      dominatedCheck: false
+    }));
+    const randomizedSubstantive = shuffle(substantive);
+    const finalCheck = {
+      id: "T8",
+      profiles: [PROFILES["0000"], PROFILES["1111"]],
+      dominatedCheck: true
+    };
+    return [...randomizedSubstantive, finalCheck].map((task, index) => {
       const swapped = Math.random() < 0.5;
       return {
         ...task,
@@ -71,11 +92,13 @@
     });
   }
 
+  const designBlock = chooseBlock();
   const state = {
     startedAt: null,
     responseId: crypto.randomUUID ? crypto.randomUUID() : `r-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    designBlock,
     demographics: {},
-    randomizedTasks: randomizedTasks(),
+    randomizedTasks: buildTasks(designBlock),
     choices: {},
     taskIndex: 0,
     post: {},
@@ -414,6 +437,7 @@
       schema_version: "3",
       survey_version: config.surveyVersion || "3.0.0",
       response_id: state.responseId,
+      design_block: state.designBlock,
       started_at: state.startedAt,
       submitted_at: submittedAt.toISOString(),
       duration_seconds: Math.max(0, Math.round((submittedAt - startedAt) / 1000)),
