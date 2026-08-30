@@ -1,30 +1,41 @@
 /**
  * Google Apps Script response collector for the Public Sector AI Survey.
- * Bind this script to a Google Sheet and deploy it as a Web App.
+ * Deploy this script as a Web App.
  * Execute as: Me
  * Who has access: Anyone
  */
 
+const SPREADSHEET_ID = '1JbxZGxf-V2mQW5jsVa-X5EcU2dwR27CmBezgn9g7iOQ';
 const SHEET_NAME = 'responses';
 const SURVEY_VERSION = '1.0.0';
+const COLLECTOR_BUILD = '2026-08-30-fix1';
 
 function doGet() {
-  return ContentService
-    .createTextOutput(JSON.stringify({ ok: true, service: 'public-sector-ai-survey-collector' }))
-    .setMimeType(ContentService.MimeType.JSON);
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    return json_({
+      ok: true,
+      service: 'public-sector-ai-survey-collector',
+      build: COLLECTOR_BUILD,
+      spreadsheet: ss.getName()
+    });
+  } catch (err) {
+    console.error(err);
+    return json_({ ok: false, error: 'spreadsheet_unavailable', build: COLLECTOR_BUILD });
+  }
 }
 
 function doPost(e) {
   try {
     if (!e || !e.parameter || !e.parameter.payload) {
-      return json_({ ok: false, error: 'missing_payload' });
+      return json_({ ok: false, error: 'missing_payload', build: COLLECTOR_BUILD });
     }
 
     const payload = JSON.parse(e.parameter.payload);
     validate_(payload);
 
     if (payload.honeypot) {
-      return json_({ ok: true });
+      return json_({ ok: true, build: COLLECTOR_BUILD });
     }
 
     const sheet = getSheet_();
@@ -33,16 +44,17 @@ function doPost(e) {
 
     const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     sheet.appendRow(headers.map(h => row[h] ?? ''));
+    SpreadsheetApp.flush();
 
-    return json_({ ok: true });
+    return json_({ ok: true, response_id: payload.response_id, build: COLLECTOR_BUILD });
   } catch (err) {
     console.error(err);
-    return json_({ ok: false, error: 'invalid_submission' });
+    return json_({ ok: false, error: 'invalid_submission', detail: String(err), build: COLLECTOR_BUILD });
   }
 }
 
 function getSheet_() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) sheet = ss.insertSheet(SHEET_NAME);
   return sheet;
