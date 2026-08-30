@@ -27,10 +27,44 @@ jobs:
           npm init -y
           npm install playwright@1.55.0 csv-parse@5.5.6
           npx playwright install chromium
-      - name: Load P061-P118 persona batch
+      - name: Reconstruct validated P061-P118 persona batch
         run: |
-          rm -f synthetic_tmp/personas.*.b64
-          cp synthetic_tmp/batch2_p061_p118.b64 synthetic_tmp/personas.00.b64
+          python - <<'PY'
+          import base64, gzip, json, csv, io, pathlib
+          root = pathlib.Path('synthetic_tmp')
+          parts = ''.join((root / f'batch2.{i:02d}.b64').read_text().strip() for i in range(3))
+          records = json.loads(gzip.decompress(base64.b64decode(parts)).decode('utf-8'))
+          expected = [f'P{i:03d}' for i in range(61,119)]
+          actual = [r['id'] for r in records]
+          if actual != expected:
+              raise SystemExit(f'Persona IDs mismatch: {actual[:3]} ... {actual[-3:]}')
+          rows = []
+          for r in records:
+              rows.append({
+                  'persona_id': r['id'],
+                  'name': r.get('name',''),
+                  'age': r.get('age',''),
+                  'country': r.get('country',''),
+                  'highest_education': r.get('edu',''),
+                  'degree_field': r.get('field',''),
+                  'current_role': r.get('role',''),
+                  'technical_depth_1_to_5': r.get('tech',''),
+                  'policy_governance_depth_1_to_5': r.get('policy',''),
+                  'primary_ai_safety_interests': r.get('interests',''),
+                  'current_ai_safety_activity': r.get('activity',''),
+                  'core_motivation': r.get('motivation',''),
+                  'main_constraint': r.get('constraint',''),
+                  'persona_summary': r.get('summary','')
+              })
+          out = io.StringIO()
+          writer = csv.DictWriter(out, fieldnames=list(rows[0].keys()), lineterminator='\n')
+          writer.writeheader(); writer.writerows(rows)
+          encoded = base64.b64encode(gzip.compress(out.getvalue().encode('utf-8'), 9)).decode('ascii')
+          for p in root.glob('personas.*.b64'):
+              p.unlink()
+          (root / 'personas.00.b64').write_text(encoded)
+          print(f'VALIDATED_BATCH={len(rows)} FIRST={rows[0]["persona_id"]} LAST={rows[-1]["persona_id"]}')
+          PY
       - name: Run 58 synthetic personas sequentially
         run: node synthetic_tmp/run-personas.js
       - name: Upload synthetic-run audit manifest
