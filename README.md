@@ -1,86 +1,59 @@
 # Public Sector AI Use Survey
 
-A lightweight, anonymous paired-choice survey on preferences for AI-assisted public-sector decision-making in India.
+An anonymous paired-choice survey on public preferences for AI-assisted government decision-making.
 
-## What the site does
+## Current design
 
-- Runs the full 5 to 7 minute survey in the browser.
-- Presents eight forced-choice comparisons between hypothetical government AI systems.
-- Randomizes whether each underlying profile is displayed as System A or System B for every respondent.
-- Records the displayed order and the selected underlying profile so position effects can be checked later.
-- Collects only broad background categories and survey responses.
-- Does not request names, email addresses, phone numbers, IP addresses, or precise location.
-- Works as a static site on GitHub Pages.
+Survey version `2.0.0` studies four attributes:
+
+- accuracy: 90% vs 98%
+- decision process: automatic initial decision vs human review before the initial decision
+- post-decision review: normal grievance process vs dedicated human review on request
+- audit: internal audit vs independent external audit with a public summary
+
+Four binary attributes imply 16 possible profiles. The live survey uses eight balanced, non-dominated paired choices rather than all 120 possible profile pairings. Each pair differs on exactly three attributes and holds one constant. Across the eight tasks, every attribute is held constant exactly twice and both levels of every attribute appear equally often.
+
+Task order and A/B position are randomized separately for each respondent.
+
+See `RESEARCH_DESIGN_V2.md` for the full rationale and analysis plan and `design.csv` for the exact choice sets.
+
+## Scope
+
+The study is not restricted to India. Any consenting adult aged 18 or above may participate. The scenario concerns a generic government agency considering AI to assist with public-benefit eligibility decisions.
 
 ## Files
 
-- `index.html` survey shell
+- `index.html` site shell
 - `styles.css` responsive interface
-- `app.js` survey logic, experimental design, validation, randomization, and submission
-- `config.js` submission endpoint configuration
-- `backend/Code.gs` Google Apps Script collector for a private Google Sheet
+- `app.js` survey logic and experimental randomization
+- `config.js` collector endpoint and survey version
+- `design.csv` exact experimental choice sets
+- `RESEARCH_DESIGN_V2.md` research design and analysis plan
+- `backend/Code.gs` Google Apps Script response collector
 
-## Publish the site with GitHub Pages
+## GitHub Pages
 
-In the repository on GitHub:
+Publish from branch `main`, folder `/(root)` under **Settings > Pages**.
 
-1. Open **Settings**.
-2. Open **Pages**.
-3. Under **Build and deployment**, choose **Deploy from a branch**.
-4. Select branch `main` and folder `/(root)`.
-5. Save.
-
-The expected public URL is:
+Expected URL:
 
 `https://abdullah-x-bd.github.io/public_sector-ai_use-survey/`
 
-## Configure response collection
+## Response collection
 
-GitHub Pages is static and cannot safely write survey responses back into the repository. The included Google Apps Script stores submissions in a private Google Sheet.
+The frontend submits to the Google Apps Script Web App configured in `config.js`.
 
-1. Create a blank Google Sheet for responses.
-2. In that Sheet, open **Extensions > Apps Script**.
-3. Replace the default script with the contents of `backend/Code.gs`.
-4. Click **Deploy > New deployment**.
-5. Choose **Web app**.
-6. Set **Execute as** to yourself.
-7. Set **Who has access** to **Anyone**.
-8. Deploy and copy the Web App URL ending in `/exec`.
-9. Open `config.js` in this repository and paste that URL into `submissionEndpoint`.
+The Apps Script must use the current `backend/Code.gs` and be deployed as:
 
-Example:
+- Execute as: Me
+- Who has access: Anyone
 
-```js
-window.SURVEY_CONFIG = {
-  submissionEndpoint: "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec",
-  surveyVersion: "1.0.0",
-  allowLocalPilotWhenEndpointMissing: false
-};
-```
+Version 2 responses are written to a separate Google Sheet tab named `responses_v2` so the earlier pilot design cannot be mixed with the final design.
 
-Before public circulation, set `allowLocalPilotWhenEndpointMissing` to `false` so a missing backend cannot be mistaken for a real submission.
+When `backend/Code.gs` changes, update the Apps Script project and deploy a **new version** of the existing Web App before collecting responses.
 
-## Pilot mode
+## Analysis
 
-Until a submission endpoint is configured, the site runs in pilot mode. A completed response is saved only in that browser's local storage and is not transmitted anywhere. The completion screen explicitly says this.
+Each respondent makes eight choices. These repeated choices are not independent respondents. Reshape to one row per displayed profile per respondent-task and estimate the effect of the four attributes using a conditional logit or an equivalent main-effects model with respondent-clustered uncertainty.
 
-## Data structure
-
-The Sheet receives one row per respondent, including:
-
-- response ID
-- survey version
-- timestamps and total completion time
-- broad demographic variables
-- for each of the eight tasks, which underlying profile appeared as System A and System B
-- selected position and selected underlying profile
-- stated priority
-- AI acceptability ratings
-- comprehension confidence
-- optional open-text response
-
-The randomization variables must be retained during analysis. Do not treat the displayed letter A or B as a policy attribute.
-
-## Research design note
-
-The survey should be treated as a rapid exploratory paired-choice experiment using a convenience sample unless recruitment is explicitly designed to support broader population inference. Repeated choices from the same participant are not independent observations and should be accounted for during analysis.
+Treat results as exploratory unless recruitment supports population-level inference.
