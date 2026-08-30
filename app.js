@@ -35,7 +35,7 @@
     PROFILES[bits] = makeProfile(bits);
   }
 
-  // Complementary pairing uses every one of the 16 profiles exactly once.
+  // Complementary pairing uses all 16 profiles exactly once.
   // T1-T7 are non-dominated trade-offs. T8 is the all-low versus all-high pair.
   const TASKS = [
     { id: "T1", profiles: [PROFILES["0001"], PROFILES["1110"]], dominatedCheck: false },
@@ -146,17 +146,17 @@
         <ul class="clean-list">
           <li>The survey takes about 5 to 7 minutes.</li>
           <li>Participation is voluntary.</li>
+          <li>The survey is intended for adults aged 18 or above.</li>
           <li>No direct personal identifiers are requested.</li>
           <li>Responses may be reported in aggregate in a policy brief or related research.</li>
           <li>Because responses are anonymous, individual responses cannot be withdrawn after submission.</li>
         </ul>
       </div>
       <div class="field full">
-        <label class="required">If you are participating as a person, are you 18 years of age or older and do you voluntarily agree to participate?</label>
+        <label class="required">Do you voluntarily agree to participate in this anonymous survey?</label>
         <div class="radio-stack">
           <label class="radio-option"><input type="radio" name="consent" value="yes"> Yes</label>
           <label class="radio-option"><input type="radio" name="consent" value="no"> No</label>
-          <label class="radio-option"><input type="radio" name="consent" value="not_applicable"> Not applicable</label>
         </div>
       </div>
       <div id="introError" class="error" aria-live="polite"></div>
@@ -172,7 +172,6 @@
         renderTermination();
         return;
       }
-      state.demographics.consent = consent;
       if (!state.startedAt) state.startedAt = new Date().toISOString();
       renderDemographics();
     };
@@ -194,14 +193,14 @@
     app.innerHTML = `
       <div class="eyebrow">Section 1</div>
       <h2>Background</h2>
-      <p class="muted">These broad categories are used only to describe the sample and explore variation in responses. Choose “Not applicable” where appropriate.</p>
+      <p class="muted">These broad categories help describe the sample and explore variation in responses.</p>
       <div class="form-grid">
         ${textField("country", "Country or territory of current residence", d.country, false)}
-        ${selectField("age", "Age group", ["18 to 24","25 to 34","35 to 44","45 to 54","55 to 64","65 or above","Prefer not to say","Not applicable"], d.age, false)}
-        ${selectField("gender", "Gender", ["Woman","Man","Non-binary or another identity","Prefer not to say","Not applicable"], d.gender, false)}
-        ${selectField("education", "Current or most recent level of education", ["Secondary school or below","Undergraduate","Postgraduate","Doctoral","Other","Prefer not to say","Not applicable"], d.education, false)}
-        ${selectField("genai", "How often do you use generative AI tools such as ChatGPT, Gemini, Claude, or similar systems?", ["Never","Less than once a month","A few times a month","A few times a week","Daily or almost daily","Not applicable"], d.genai, true, true)}
-        ${selectField("benefit", "Have you ever applied for or received a government scholarship, welfare benefit, subsidy, or similar public benefit?", ["Yes","No","Not sure","Prefer not to say","Not applicable"], d.benefit, true, true)}
+        ${selectField("age", "Age group", ["18 to 24","25 to 34","35 to 44","45 to 54","55 to 64","65 or above","Prefer not to say"], d.age, false)}
+        ${selectField("gender", "Gender", ["Woman","Man","Non-binary or another identity","Prefer not to say"], d.gender, false)}
+        ${selectField("education", "Current or most recent level of education", ["Secondary school or below","Undergraduate","Postgraduate","Doctoral","Other","Prefer not to say"], d.education, false)}
+        ${selectField("genai", "How often do you use generative AI tools such as ChatGPT, Gemini, Claude, or similar systems?", ["Never","Less than once a month","A few times a month","A few times a week","Daily or almost daily"], d.genai, true, true)}
+        ${selectField("benefit", "Have you ever applied for or received a government scholarship, welfare benefit, subsidy, or similar public benefit?", ["Yes","No","Not sure","Prefer not to say"], d.benefit, true, true)}
       </div>
       <div id="demoError" class="error" aria-live="polite"></div>
       <div class="actions">
@@ -211,7 +210,7 @@
 
     document.getElementById("backBtn").onclick = renderIntro;
     document.getElementById("demoNext").onclick = () => {
-      const next = { consent: state.demographics.consent };
+      const next = {};
       ["country","age","gender","education","genai","benefit"].forEach(k => next[k] = document.getElementById(k).value.trim());
       if (!next.genai || !next.benefit) {
         document.getElementById("demoError").textContent = "Please answer the two required questions before continuing.";
@@ -396,7 +395,7 @@
       <p class="lead">Please confirm that you want to submit this anonymous response.</p>
       <div class="info-box">
         <p>The response contains the background answers provided, eight paired choices, overall ratings, and any optional written comment.</p>
-        <p>It does not request a name, email address, phone number, IP address, precise location, or any human-versus-automated respondent classification.</p>
+        <p>It does not request a name, email address, phone number, IP address, or precise location.</p>
       </div>
       <div id="submitStatus" aria-live="polite"></div>
       <div class="actions">
