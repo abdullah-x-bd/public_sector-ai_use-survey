@@ -5,6 +5,10 @@ on:
     paths:
       - '.github/workflows/synthetic-persona-survey.yml'
 
+concurrency:
+  group: synthetic-persona-p061-p118
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -65,8 +69,8 @@ jobs:
           (root / 'personas.00.b64').write_text(encoded)
           print(f'VALIDATED_BATCH={len(rows)} FIRST={rows[0]["persona_id"]} LAST={rows[-1]["persona_id"]}')
           PY
-      - name: Run 58 synthetic personas sequentially
-        run: node synthetic_tmp/run-personas.js
+      - name: Run 58 synthetic personas sequentially with OpenRouter backoff
+        run: node synthetic_tmp/run-personas-with-backoff.js
       - name: Upload synthetic-run audit manifest
         if: always()
         uses: actions/upload-artifact@v4
