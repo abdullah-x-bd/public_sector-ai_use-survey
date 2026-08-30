@@ -1,0 +1,17 @@
+task_id,profile_id,accuracy,decision_process,review_after_decision,audit,data_processing
+T1,T1P1,90,human_before_initial,normal_grievance,external_public_summary,india_or_abroad
+T1,T1P2,98,automatic_initial,dedicated_human_review,internal,india_only
+T2,T2P1,94,automatic_initial,dedicated_human_review,internal,india_or_abroad
+T2,T2P2,90,human_before_initial,normal_grievance,internal,india_only
+T3,T3P1,90,automatic_initial,dedicated_human_review,internal,india_only
+T3,T3P2,98,human_before_initial,normal_grievance,external_public_summary,india_only
+T4,T4P1,94,automatic_initial,normal_grievance,external_public_summary,india_only
+T4,T4P2,90,human_before_initial,dedicated_human_review,external_public_summary,india_or_abroad
+T5,T5P1,94,human_before_initial,dedicated_human_review,external_public_summary,india_only
+T5,T5P2,98,automatic_initial,normal_grievance,internal,india_or_abroad
+T6,T6P1,94,human_before_initial,normal_grievance,internal,india_or_abroad
+T6,T6P2,94,automatic_initial,dedicated_human_review,external_public_summary,india_only
+T7,T7P1,98,automatic_initial,dedicated_human_review,external_public_summary,india_only
+T7,T7P2,98,human_before_initial,dedicated_human_review,internal,india_or_abroad
+T8,T8P1,98,human_before_initial,normal_grievance,internal,india_only
+T8,T8P2,90,automatic_initial,normal_grievance,external_public_summary,india_only
